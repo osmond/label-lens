@@ -8,16 +8,12 @@ export default function ProfilePage() {
   const [customInput, setCustomInput] = useState("");
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    setProfile(loadProfile());
-  }, []);
+  useEffect(() => { setProfile(loadProfile()); }, []);
 
-  function toggleRestriction(r: string) {
+  function toggle(r: string) {
     setProfile((p) => ({
       ...p,
-      restrictions: p.restrictions.includes(r)
-        ? p.restrictions.filter((x) => x !== r)
-        : [...p.restrictions, r],
+      restrictions: p.restrictions.includes(r) ? p.restrictions.filter((x) => x !== r) : [...p.restrictions, r],
     }));
     setSaved(false);
   }
@@ -30,100 +26,103 @@ export default function ProfilePage() {
     setSaved(false);
   }
 
-  function removeCustom(item: string) {
-    setProfile((p) => ({ ...p, customAllergens: p.customAllergens.filter((x) => x !== item) }));
-    setSaved(false);
-  }
-
-  function handleSave() {
+  function save() {
     saveProfile(profile);
     setSaved(true);
+    setTimeout(() => setSaved(false), 2200);
+    if ("vibrate" in navigator) navigator.vibrate(12);
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">My Dietary Profile</h1>
-        <p className="text-slate-500 mt-1 text-sm">
-          Your profile is saved locally and used to personalize every scan.
-        </p>
+    <div className="space-y-6">
+      <div className="animate-fade-up">
+        <h1 className="text-[32px] font-bold text-warm-900 tracking-tight leading-none">My Profile</h1>
+        <p className="text-[15px] text-warm-400 mt-1.5">Saved locally on your device</p>
       </div>
 
-      <section className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-        <h2 className="font-semibold text-slate-700">Dietary Restrictions</h2>
-        <div className="flex flex-wrap gap-2">
-          {COMMON_RESTRICTIONS.map((r) => (
-            <button
-              key={r}
-              onClick={() => toggleRestriction(r)}
-              className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                profile.restrictions.includes(r)
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-        <h2 className="font-semibold text-slate-700">Custom Allergens</h2>
-        <p className="text-sm text-slate-400">
-          Add specific ingredients you need to avoid — including uncommon allergens like mustard,
-          sesame, lupin, celery, molluscs, pine nuts, etc.
-        </p>
-
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={customInput}
-            onChange={(e) => setCustomInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addCustom()}
-            placeholder="e.g. mustard, sesame, lupin..."
-            className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <button
-            onClick={addCustom}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
-          >
-            Add
-          </button>
-        </div>
-
-        {profile.customAllergens.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {profile.customAllergens.map((item) => (
-              <span
-                key={item}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-sm"
+      {/* Dietary restrictions */}
+      <div className="animate-fade-up-d1 space-y-2">
+        <p className="text-[12px] font-bold text-warm-400 uppercase tracking-widest px-1">Dietary Restrictions</p>
+        <div className="rounded-card bg-white shadow-card overflow-hidden">
+          {COMMON_RESTRICTIONS.map((r, i) => {
+            const active = profile.restrictions.includes(r);
+            return (
+              <button
+                key={r}
+                onClick={() => toggle(r)}
+                className={`pressable w-full flex items-center justify-between px-5 py-4 text-left ${
+                  i > 0 ? "border-t border-warm-100" : ""
+                }`}
               >
-                {item}
-                <button
-                  onClick={() => removeCustom(item)}
-                  className="text-rose-400 hover:text-rose-700 font-bold leading-none"
-                  aria-label={`Remove ${item}`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleSave}
-          className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-        >
-          Save Profile
-        </button>
-        {saved && (
-          <span className="text-emerald-600 text-sm font-medium">Profile saved!</span>
-        )}
+                <span className={`text-[17px] ${active ? "font-semibold text-warm-900" : "text-warm-700"}`}>{r}</span>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                  active ? "bg-brand-500" : "border-2 border-warm-200"
+                }`}>
+                  {active && (
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/>
+                    </svg>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Custom allergens */}
+      <div className="animate-fade-up-d2 space-y-2">
+        <p className="text-[12px] font-bold text-warm-400 uppercase tracking-widest px-1">Custom Allergens</p>
+        <div className="rounded-card bg-white shadow-card overflow-hidden">
+          <div className="flex items-center px-5 py-3 border-b border-warm-100 gap-3">
+            <input
+              type="text"
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addCustom()}
+              placeholder="e.g. sesame, lupin, celery…"
+              className="flex-1 text-[16px] text-warm-900 placeholder-warm-300 bg-transparent focus:outline-none py-1"
+            />
+            <button
+              onClick={addCustom}
+              disabled={!customInput.trim()}
+              className="pressable text-[15px] font-bold text-brand-500 disabled:opacity-30"
+            >
+              Add
+            </button>
+          </div>
+          {profile.customAllergens.length === 0 ? (
+            <div className="px-5 py-5 text-center">
+              <p className="text-[14px] text-warm-300">No custom allergens added</p>
+            </div>
+          ) : (
+            <div>
+              {profile.customAllergens.map((item, i) => (
+                <div key={item} className={`flex items-center justify-between px-5 py-3.5 ${i > 0 ? "border-t border-warm-100" : ""}`}>
+                  <span className="text-[16px] text-warm-900">{item}</span>
+                  <button
+                    onClick={() => { setProfile((p) => ({ ...p, customAllergens: p.customAllergens.filter((x) => x !== item) })); setSaved(false); }}
+                    className="pressable text-[14px] font-semibold text-danger"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <p className="text-[12px] text-warm-400 px-1">
+          Specify ingredients Claude should watch for, even if they&apos;re unusual (mustard, pine nuts, molluscs, etc.)
+        </p>
+      </div>
+
+      {/* Save */}
+      <button
+        onClick={save}
+        className="pressable animate-fade-up-d3 w-full py-4 bg-brand-500 text-white rounded-[16px] text-[17px] font-bold tracking-tight transition-all"
+      >
+        {saved ? "✓ Saved!" : "Save Profile"}
+      </button>
     </div>
   );
 }

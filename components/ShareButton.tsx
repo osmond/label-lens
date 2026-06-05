@@ -81,7 +81,7 @@ export default function ShareButton({ targetRef, result }: ShareButtonProps) {
     <button
       onClick={handleShare}
       disabled={saving}
-      className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors disabled:opacity-50"
+      className="pressable flex items-center gap-1.5 px-4 py-2 bg-white rounded-[12px] shadow-card text-[13px] font-semibold text-warm-600 disabled:opacity-50"
     >
       {saving ? (
         <>

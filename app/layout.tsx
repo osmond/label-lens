@@ -40,7 +40,7 @@ export default function RootLayout({
         <ServiceWorkerRegistrar />
         {/* Top nav — hidden on mobile */}
         <Nav />
-        <main className="max-w-3xl mx-auto px-4 py-6 pb-24 sm:pb-8">{children}</main>
+        <main className="max-w-3xl mx-auto px-4 pt-5 pb-28 sm:pb-10">{children}</main>
         {/* Bottom nav — only on mobile */}
         <BottomNav />
       </body>

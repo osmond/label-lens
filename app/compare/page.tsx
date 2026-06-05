@@ -4,126 +4,71 @@ import { loadHistory } from "@/lib/history";
 import { HistoryScan } from "@/lib/types";
 import Link from "next/link";
 
-const VERDICT_CONFIG = {
-  safe: { label: "Safe", icon: "✓", bg: "bg-emerald-50 border-emerald-300", text: "text-emerald-700", iconBg: "bg-emerald-100" },
-  warning: { label: "Check", icon: "⚠", bg: "bg-amber-50 border-amber-300", text: "text-amber-700", iconBg: "bg-amber-100" },
-  danger: { label: "Danger", icon: "✕", bg: "bg-red-50 border-red-300", text: "text-red-700", iconBg: "bg-red-100" },
+const V = {
+  safe: { dot: "bg-safe", text: "text-safe", label: "Safe", tint: "bg-safe/[0.08]" },
+  warning: { dot: "bg-caution", text: "text-caution", label: "Warning", tint: "bg-caution/[0.08]" },
+  danger: { dot: "bg-danger", text: "text-danger", label: "Danger", tint: "bg-danger/[0.08]" },
 };
+const SD = { safe: "bg-safe", caution: "bg-caution", avoid: "bg-danger", neutral: "bg-warm-200" };
+const ST = { safe: "text-safe", caution: "text-caution", avoid: "text-danger", neutral: "text-warm-400" };
 
-const SAFETY_COLORS = {
-  safe: "text-emerald-700 bg-emerald-50",
-  caution: "text-amber-700 bg-amber-50",
-  avoid: "text-red-700 bg-red-50",
-  neutral: "text-slate-500 bg-slate-50",
-};
-
-const FLAG_TYPE_BADGES = {
-  confirmed: "bg-red-100 text-red-700",
-  hidden: "bg-orange-100 text-orange-700",
-  "cross-contamination": "bg-yellow-100 text-yellow-700",
-};
-
-function ScanSelector({
-  history,
-  selected,
-  onSelect,
-  label,
-}: {
-  history: HistoryScan[];
-  selected: string;
-  onSelect: (id: string) => void;
-  label: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-slate-500">{label}</label>
-      <select
-        value={selected}
-        onChange={(e) => onSelect(e.target.value)}
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-      >
-        <option value="">— choose a scan —</option>
-        {history.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.productName} ({s.verdict})
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function ScanColumn({ scan }: { scan: HistoryScan }) {
-  const cfg = VERDICT_CONFIG[scan.verdict];
-  const avoidCount = scan.result.ingredients.filter((i) => i.safety === "avoid").length;
-  const cautionCount = scan.result.ingredients.filter((i) => i.safety === "caution").length;
-  const safeCount = scan.result.ingredients.filter((i) => i.safety === "safe").length;
+function Col({ scan }: { scan: HistoryScan }) {
+  const v = V[scan.verdict];
+  const avoid = scan.result.ingredients.filter((i) => i.safety === "avoid").length;
+  const caution = scan.result.ingredients.filter((i) => i.safety === "caution").length;
+  const safe = scan.result.ingredients.filter((i) => i.safety === "safe").length;
 
   return (
-    <div className="space-y-4">
-      <div className={`rounded-xl border-2 p-4 ${cfg.bg} ${cfg.text}`}>
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${cfg.iconBg}`}>
-            {cfg.icon}
-          </span>
-          <div>
-            <p className="font-bold text-sm leading-tight">{scan.productName}</p>
-            <p className="text-xs opacity-60">{cfg.label}</p>
+    <div className="space-y-3">
+      <div className={`rounded-card-sm shadow-card overflow-hidden ${v.tint}`}>
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-2.5 h-2.5 rounded-full ${v.dot}`} />
+            <span className={`text-[12px] font-bold uppercase tracking-wide ${v.text}`}>{v.label}</span>
           </div>
+          <p className="text-[14px] font-bold text-warm-900 leading-snug">{scan.productName}</p>
+          <p className="text-[12px] text-warm-500 mt-1.5 leading-relaxed line-clamp-3">{scan.result.summary}</p>
         </div>
-        <p className="text-xs opacity-70">{scan.result.summary}</p>
-      </div>
-
-      <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Safety breakdown</h3>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-red-50 rounded-lg p-2">
-            <div className="text-xl font-bold text-red-600">{avoidCount}</div>
-            <div className="text-xs text-red-500">Avoid</div>
-          </div>
-          <div className="bg-amber-50 rounded-lg p-2">
-            <div className="text-xl font-bold text-amber-600">{cautionCount}</div>
-            <div className="text-xs text-amber-500">Caution</div>
-          </div>
-          <div className="bg-emerald-50 rounded-lg p-2">
-            <div className="text-xl font-bold text-emerald-600">{safeCount}</div>
-            <div className="text-xs text-emerald-500">Safe</div>
-          </div>
+        <div className="flex border-t border-black/[0.06] divide-x divide-black/[0.06]">
+          {[{ n: avoid, l: "Avoid", c: "text-danger" }, { n: caution, l: "Caution", c: "text-caution" }, { n: safe, l: "Safe", c: "text-safe" }].map(({ n, l, c }) => (
+            <div key={l} className="flex-1 py-2.5 text-center">
+              <p className={`text-[18px] font-bold ${c}`}>{n}</p>
+              <p className="text-[11px] text-warm-400 font-medium">{l}</p>
+            </div>
+          ))}
         </div>
       </div>
 
       {scan.result.flagged.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Flagged</h3>
+        <div className="rounded-card-sm bg-white shadow-card overflow-hidden">
+          <p className="text-[11px] font-bold text-warm-400 uppercase tracking-widest px-4 pt-3.5 pb-1">Flagged</p>
           {scan.result.flagged.map((f, i) => (
-            <div key={i} className="text-xs space-y-0.5">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-semibold text-slate-700">{f.ingredient}</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${FLAG_TYPE_BADGES[f.type ?? "confirmed"]}`}>
-                  {f.type ?? "confirmed"}
-                </span>
-              </div>
-              <p className="text-slate-500">{f.reason}</p>
-              {f.safeAlternative && (
-                <p className="text-indigo-600">✦ {f.safeAlternative}</p>
-              )}
+            <div key={i} className={`px-4 py-2.5 ${i > 0 ? "border-t border-warm-100" : ""}`}>
+              <p className="text-[13px] font-semibold text-warm-800">{f.ingredient}</p>
+              <p className="text-[11px] text-warm-500 mt-0.5 leading-relaxed">{f.reason}</p>
+              {f.safeAlternative && <p className="text-[11px] text-brand-500 mt-1 font-medium">→ {f.safeAlternative}</p>}
             </div>
           ))}
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">All ingredients ({scan.result.ingredients.length})</h3>
-        <div className="space-y-1">
-          {scan.result.ingredients.map((ing, i) => (
-            <div key={i} className="flex items-center justify-between gap-2 text-xs">
-              <span className="text-slate-700 truncate">{ing.name}</span>
-              <span className={`px-1.5 py-0.5 rounded-full font-medium shrink-0 ${SAFETY_COLORS[ing.safety]}`}>
-                {ing.safety}
-              </span>
+      <div className="rounded-card-sm bg-white shadow-card overflow-hidden">
+        <p className="text-[11px] font-bold text-warm-400 uppercase tracking-widest px-4 pt-3.5 pb-1">
+          All Ingredients ({scan.result.ingredients.length})
+        </p>
+        {scan.result.ingredients.map((ing, i) => (
+          <div key={i} className={`flex items-center gap-2.5 px-4 py-2.5 ${i > 0 ? "border-t border-warm-100" : ""}`}>
+            <div className={`w-[4px] self-stretch rounded-full shrink-0 ${SD[ing.safety]}`} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] text-warm-800 truncate">{ing.name}</p>
             </div>
-          ))}
-        </div>
+            {ing.safety !== "neutral" && (
+              <span className={`text-[10px] font-bold shrink-0 ${ST[ing.safety]}`}>
+                {ing.safety.charAt(0).toUpperCase() + ing.safety.slice(1)}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -137,10 +82,7 @@ export default function ComparePage() {
   useEffect(() => {
     const h = loadHistory();
     setHistory(h);
-    if (h.length >= 2) {
-      setLeftId(h[0].id);
-      setRightId(h[1].id);
-    }
+    if (h.length >= 2) { setLeftId(h[0].id); setRightId(h[1].id); }
   }, []);
 
   const left = history.find((s) => s.id === leftId);
@@ -148,39 +90,63 @@ export default function ComparePage() {
 
   if (history.length < 2) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-800">Compare Labels</h1>
-        <div className="text-center py-16 text-slate-400">
-          <div className="text-5xl mb-3">⚖️</div>
-          <p className="font-medium">Need at least 2 scans to compare</p>
-          <p className="text-sm mt-1">
-            <Link href="/" className="text-indigo-600 underline">Scan some labels</Link> first.
+      <div className="space-y-5">
+        <div className="animate-fade-up">
+          <h1 className="text-[32px] font-bold text-warm-900 tracking-tight leading-none">Compare</h1>
+        </div>
+        <div className="animate-fade-up-d1 flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-20 h-20 rounded-[24px] bg-warm-100 flex items-center justify-center mb-5">
+            <svg className="w-9 h-9 text-warm-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="8" height="16" rx="2" strokeWidth="1.5"/>
+              <rect x="13" y="4" width="8" height="16" rx="2" strokeWidth="1.5"/>
+            </svg>
+          </div>
+          <p className="text-[20px] font-bold text-warm-700 tracking-tight">Need 2 scans to compare</p>
+          <p className="text-[15px] text-warm-400 mt-2 leading-relaxed">
+            Scan a couple of labels and<br/>come back to compare them.
           </p>
+          <Link href="/" className="pressable mt-6 px-6 py-3 bg-brand-500 text-white rounded-pill text-[15px] font-bold inline-block">
+            Start scanning
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Compare Labels</h1>
-        <p className="text-slate-500 mt-1 text-sm">Pick two scans from your history to compare side by side.</p>
+    <div className="space-y-5">
+      <div className="animate-fade-up">
+        <h1 className="text-[32px] font-bold text-warm-900 tracking-tight leading-none">Compare</h1>
+        <p className="text-[15px] text-warm-400 mt-1.5">Pick two scans to see side by side</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <ScanSelector history={history} selected={leftId} onSelect={setLeftId} label="Left" />
-        <ScanSelector history={history} selected={rightId} onSelect={setRightId} label="Right" />
+      <div className="animate-fade-up-d1 grid grid-cols-2 gap-3">
+        {[{ id: leftId, setId: setLeftId, label: "Left" }, { id: rightId, setId: setRightId, label: "Right" }].map(({ id, setId, label }) => (
+          <div key={label}>
+            <p className="text-[11px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">{label}</p>
+            <select
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              className="w-full bg-white rounded-[14px] shadow-card px-3 py-2.5 text-[13px] text-warm-800 font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            >
+              <option value="">Select…</option>
+              {history.map((s) => (
+                <option key={s.id} value={s.id}>{s.productName}</option>
+              ))}
+            </select>
+          </div>
+        ))}
       </div>
 
-      {left && right && leftId !== rightId ? (
-        <div className="grid grid-cols-2 gap-4">
-          <ScanColumn scan={left} />
-          <ScanColumn scan={right} />
+      {left && right && leftId !== rightId && (
+        <div className="animate-scale-in grid grid-cols-2 gap-3">
+          <Col scan={left} />
+          <Col scan={right} />
         </div>
-      ) : leftId === rightId && leftId !== "" ? (
-        <p className="text-center text-sm text-slate-400 py-8">Select two different scans to compare.</p>
-      ) : null}
+      )}
+      {leftId === rightId && leftId && (
+        <p className="text-center text-[14px] text-warm-400 py-8">Select two different scans.</p>
+      )}
     </div>
   );
 }

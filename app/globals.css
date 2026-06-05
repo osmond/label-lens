@@ -3,17 +3,100 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --bg: #F7F6F3;
+  --surface: #FFFFFF;
+  --accent: #3B5BDB;
+  --label: #1A1815;
+  --label-2: #7C7870;
+  --label-3: #A8A49B;
+  --sep: rgba(26,24,21,0.10);
+  --safe: #16A34A;
+  --caution: #C27B16;
+  --danger: #DC2626;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  overflow-x: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--label);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  min-height: 100%;
 }
 
-/* Safe area padding for iOS home indicator */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+/* Hide scrollbars globally */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
+
+/* Safe area utilities */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px); }
+
+/* Press states */
+.pressable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.12s cubic-bezier(0.16,1,0.3,1), opacity 0.12s;
 }
+.pressable:active { transform: scale(0.96); opacity: 0.75; }
+
+/* Glass / frosted surfaces */
+.glass {
+  background: rgba(247, 246, 243, 0.88);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+
+/* iOS-style tab bar */
+.tab-bar {
+  background: rgba(247, 246, 243, 0.92);
+  backdrop-filter: saturate(200%) blur(28px);
+  -webkit-backdrop-filter: saturate(200%) blur(28px);
+  border-top: 0.5px solid rgba(26,24,21,0.14);
+}
+
+/* Gradient hero tints */
+.verdict-safe-bg {
+  background: linear-gradient(155deg, rgba(22,163,74,0.13) 0%, rgba(247,246,243,0) 65%);
+}
+.verdict-caution-bg {
+  background: linear-gradient(155deg, rgba(194,123,22,0.13) 0%, rgba(247,246,243,0) 65%);
+}
+.verdict-danger-bg {
+  background: linear-gradient(155deg, rgba(220,38,38,0.13) 0%, rgba(247,246,243,0) 65%);
+}
+
+/* Skeleton shimmer */
+.shimmer {
+  background: linear-gradient(90deg, #EFEEE9 25%, #E2DED7 50%, #EFEEE9 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* Input styles */
+.input-field {
+  background: var(--bg);
+  border: 1.5px solid rgba(26,24,21,0.12);
+  border-radius: 14px;
+  font-size: 16px;
+  color: var(--label);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59,91,219,0.14);
+}
+.input-field::placeholder { color: var(--label-3); }
