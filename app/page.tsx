@@ -7,9 +7,10 @@ import VerdictBanner from "@/components/VerdictBanner";
 import IngredientGrid from "@/components/IngredientGrid";
 import ShareButton from "@/components/ShareButton";
 import Link from "next/link";
-import { Camera, AlignLeft, FlaskConical } from "lucide-react";
+import { Camera, AlignLeft, FlaskConical, ScanBarcode } from "lucide-react";
+import BarcodeScanner from "@/components/BarcodeScanner";
 
-type Mode = "image" | "text";
+type Mode = "image" | "barcode" | "text";
 
 function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
@@ -89,7 +90,7 @@ export default function ScanPage() {
   }
 
   const hasProfile = profile.restrictions.length > 0 || profile.customAllergens.length > 0;
-  const canAnalyze = mode === "image" ? !!imageFile : !!text.trim();
+  const canAnalyze = mode === "image" ? !!imageFile : mode === "text" ? !!text.trim() : false;
 
   return (
     <div className="space-y-5">
@@ -115,27 +116,58 @@ export default function ScanPage() {
       <div className="animate-fade-up-d1 rounded-card-lg bg-white shadow-card overflow-hidden">
         {/* Mode selector */}
         <div className="flex border-b border-warm-100">
-          {(["image", "text"] as Mode[]).map((m) => (
+          {([
+            { id: "image", icon: <Camera className="w-4 h-4" />, label: "Photo" },
+            { id: "barcode", icon: <ScanBarcode className="w-4 h-4" />, label: "Barcode" },
+            { id: "text", icon: <AlignLeft className="w-4 h-4" />, label: "Text" },
+          ] as { id: Mode; icon: React.ReactNode; label: string }[]).map(({ id, icon, label }) => (
             <button
-              key={m}
-              onClick={() => { setMode(m); setResult(null); setError(null); haptic(); }}
+              key={id}
+              onClick={() => { setMode(id); setResult(null); setError(null); haptic(); }}
               className={`pressable flex-1 py-3.5 text-[14px] font-semibold transition-colors border-b-2 ${
-                mode === m
+                mode === id
                   ? "text-brand-500 border-brand-500"
                   : "text-warm-400 border-transparent"
               }`}
             >
-              {m === "image" ? (
-                <span className="flex items-center justify-center gap-1.5"><Camera className="w-4 h-4" />Photo</span>
-              ) : (
-                <span className="flex items-center justify-center gap-1.5"><AlignLeft className="w-4 h-4" />Paste Text</span>
-              )}
+              <span className="flex items-center justify-center gap-1.5">{icon}{label}</span>
             </button>
           ))}
         </div>
 
+        {/* Barcode scanner */}
+        {mode === "barcode" && (
+          <BarcodeScanner
+            onResult={(ingredients, productName) => {
+              setText(ingredients);
+              haptic(20);
+              // Auto-analyze with the fetched ingredient text
+              setLoading(true);
+              setError(null);
+              setResult(null);
+              fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: ingredients, profile }),
+              })
+                .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(e.error)))
+                .then((data: AnalysisResult) => {
+                  // Inject product name from Open Food Facts
+                  data.productName = data.productName || productName;
+                  setResult(data);
+                  saveToHistory(data, "text");
+                  haptic(20);
+                  setTimeout(() => resultSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+                })
+                .catch((e) => { setError(typeof e === "string" ? e : "Analysis failed"); haptic(30); })
+                .finally(() => setLoading(false));
+            }}
+            onError={(msg) => { setError(msg); haptic(30); }}
+          />
+        )}
+
         {/* Camera hero */}
-        {mode === "image" ? (
+        {mode === "image" || mode === "text" ? (mode === "image" ? (
           <div>
             <div
               onClick={() => { fileInputRef.current?.click(); haptic(); }}
@@ -186,7 +218,7 @@ export default function ScanPage() {
               className="input-field w-full px-4 py-3.5 text-[15px] resize-none leading-relaxed"
             />
           </div>
-        )}
+        )) : null}
 
         {/* Error */}
         {error && (
@@ -196,7 +228,12 @@ export default function ScanPage() {
         )}
 
         {/* CTA */}
-        <div className="p-4 pt-0">
+        {mode === "barcode" && !loading && !result && (
+          <div className="px-5 pb-4 pt-1">
+            <p className="text-[13px] text-warm-400 text-center">Point the camera at a barcode — it scans automatically</p>
+          </div>
+        )}
+        <div className={`p-4 pt-0 ${mode === "barcode" ? "hidden" : ""}`}>
           {mode === "text" ? null : <div className="h-3" />}
           <button
             onClick={handleAnalyze}
