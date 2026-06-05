@@ -13,7 +13,7 @@ export default function Nav() {
           <span className="font-semibold text-warm-900 text-[15px] tracking-tight">Label Lens</span>
         </div>
         <div className="flex gap-1">
-          {[{href:"/",label:"Scan"},{href:"/history",label:"History"},{href:"/compare",label:"Compare"},{href:"/profile",label:"Profile"}].map(({href,label})=>(
+          {[{href:"/",label:"Scan"},{href:"/history",label:"History"},{href:"/profile",label:"Profile"}].map(({href,label})=>(
             <Link key={href} href={href} className={`px-3 py-1.5 rounded-[10px] text-[13px] font-medium transition-colors ${
               path===href ? "bg-brand-500 text-white" : "text-warm-600 hover:bg-warm-100"
             }`}>{label}</Link>

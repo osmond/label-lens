@@ -5,6 +5,8 @@ export const MOCK_RESULT: AnalysisResult = {
   summary:
     "This appears to be a classic Caesar salad dressing — a creamy, tangy condiment made with anchovies, egg, parmesan, lemon, and garlic. It is not suitable for vegans, vegetarians, or people with fish, egg, dairy, or gluten allergies.",
   verdict: "warning",
+  qualityScore: 54,
+  personalWarnings: ["Contains Fish", "Contains Dairy", "Contains Egg", "Not Vegan", "Not Vegetarian"],
   flagged: [
     {
       ingredient: "Anchovy paste",

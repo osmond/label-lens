@@ -5,10 +5,11 @@ import { saveToHistory } from "@/lib/history";
 import { AnalysisResult, UserProfile } from "@/lib/types";
 import VerdictBanner from "@/components/VerdictBanner";
 import IngredientGrid from "@/components/IngredientGrid";
+import QualityScore from "@/components/QualityScore";
 import ShareButton from "@/components/ShareButton";
-import Link from "next/link";
-import { Camera, AlignLeft, FlaskConical, ScanBarcode } from "lucide-react";
 import BarcodeScanner from "@/components/BarcodeScanner";
+import Link from "next/link";
+import { Camera, AlignLeft, ScanBarcode, Check } from "lucide-react";
 
 type Mode = "image" | "barcode" | "text";
 
@@ -29,6 +30,48 @@ function haptic(ms = 8) {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(ms);
 }
 
+function SkeletonResults() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="rounded-card bg-white shadow-card p-5 space-y-3">
+        <div className="flex gap-4">
+          <div className="w-24 h-24 rounded-[20px] bg-warm-100 shrink-0" />
+          <div className="flex-1 space-y-2 pt-1">
+            <div className="h-3 bg-warm-100 rounded-full w-20" />
+            <div className="h-6 bg-warm-100 rounded-full w-36" />
+            <div className="h-8 bg-warm-100 rounded-[10px] w-44 mt-2" />
+          </div>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <div className="flex-1 h-16 rounded-[12px] bg-warm-100" />
+          <div className="flex-1 h-16 rounded-[12px] bg-warm-100" />
+          <div className="flex-1 h-16 rounded-[12px] bg-warm-100" />
+        </div>
+      </div>
+      <div className="rounded-card bg-white shadow-card p-5 space-y-3">
+        <div className="h-3 bg-warm-100 rounded-full w-28" />
+        {[80, 60, 90, 70, 55].map((w, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-1 h-8 rounded-full bg-warm-100 shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3 bg-warm-100 rounded-full" style={{ width: `${w}%` }} />
+              <div className="h-2.5 bg-warm-100 rounded-full w-2/3" />
+            </div>
+            <div className="w-12 h-5 rounded-pill bg-warm-100 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const BENEFITS = [
+  "Understand ingredients in plain English",
+  "Detect allergens and sensitivities instantly",
+  "Check vegan and vegetarian compatibility",
+  "Discover safer alternatives",
+];
+
 export default function ScanPage() {
   const [mode, setMode] = useState<Mode>("image");
   const [text, setText] = useState("");
@@ -41,6 +84,7 @@ export default function ScanPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const resultSectionRef = useRef<HTMLDivElement>(null);
+  const scanCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setProfile(loadProfile()); }, []);
 
@@ -53,18 +97,19 @@ export default function ScanPage() {
     haptic();
   }
 
-  async function handleAnalyze() {
+  async function handleAnalyze(overrideText?: string, overrideName?: string) {
     setError(null);
     setResult(null);
     setLoading(true);
     haptic(12);
     try {
+      const useText = overrideText ?? text;
       let body: Record<string, unknown> = { profile };
       if (mode === "image" && imageFile) {
         const { base64, mimeType } = await fileToBase64(imageFile);
         body = { ...body, imageBase64: base64, imageMimeType: mimeType };
-      } else if (mode === "text" && text.trim()) {
-        body = { ...body, text: text.trim() };
+      } else if ((mode === "text" || overrideText) && useText.trim()) {
+        body = { ...body, text: useText.trim() };
       } else {
         setError("Please provide an image or paste ingredient text.");
         setLoading(false);
@@ -77,8 +122,9 @@ export default function ScanPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Analysis failed");
       const data: AnalysisResult = await res.json();
+      if (overrideName) data.productName = data.productName || overrideName;
       setResult(data);
-      saveToHistory(data, mode);
+      saveToHistory(data, mode === "image" ? "image" : "text");
       haptic(20);
       setTimeout(() => resultSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     } catch (e: unknown) {
@@ -91,43 +137,55 @@ export default function ScanPage() {
 
   const hasProfile = profile.restrictions.length > 0 || profile.customAllergens.length > 0;
   const canAnalyze = mode === "image" ? !!imageFile : mode === "text" ? !!text.trim() : false;
+  const showHero = !imagePreview && !result && mode !== "barcode";
 
   return (
-    <div className="space-y-5">
-      {/* Large title */}
-      <div className="animate-fade-up">
-        <h1 className="text-[32px] font-bold text-warm-900 tracking-tight leading-none">Scan a Label</h1>
-        <p className="text-[15px] text-warm-400 mt-1.5">Instant AI-powered ingredient breakdown</p>
-      </div>
+    <div className="space-y-6">
 
-      {/* Mock mode */}
-      {process.env.NEXT_PUBLIC_MOCK_MODE === "true" && (
-        <div className="animate-fade-up-d1 rounded-[14px] bg-brand-50 border border-brand-100 px-4 py-3 flex items-center gap-3">
-          <div className="w-7 h-7 rounded-[8px] bg-brand-100 flex items-center justify-center shrink-0">
-            <FlaskConical className="w-4 h-4 text-brand-400" />
-          </div>
-          <p className="text-[13px] font-medium text-brand-600">
-            Mock mode — sample data only. Add a real API key to use Claude.
+      {/* Landing hero — shown before any input */}
+      {showHero && (
+        <div className="animate-fade-up pt-2">
+          <h1 className="text-[34px] sm:text-[40px] font-bold text-warm-900 tracking-tight leading-[1.1]">
+            Know what&apos;s really<br className="sm:hidden" /> in your products.
+          </h1>
+          <p className="text-[16px] text-warm-500 mt-3 leading-relaxed max-w-md">
+            Instant AI-powered ingredient analysis for food, skincare, supplements, and household products.
           </p>
+          <ul className="mt-5 space-y-2.5">
+            {BENEFITS.map((b) => (
+              <li key={b} className="flex items-center gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 text-brand-500" strokeWidth={2.5} />
+                </div>
+                <span className="text-[14px] text-warm-700 font-medium">{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* After upload — compact title */}
+      {!showHero && !result && (
+        <div className="animate-fade-up">
+          <h1 className="text-[28px] font-bold text-warm-900 tracking-tight leading-none">Scan a Label</h1>
+          <p className="text-[14px] text-warm-400 mt-1">AI-powered ingredient breakdown</p>
         </div>
       )}
 
       {/* Main input card */}
-      <div className="animate-fade-up-d1 rounded-card-lg bg-white shadow-card overflow-hidden">
+      <div ref={scanCardRef} className="animate-fade-up-d1 rounded-card-lg bg-white shadow-card overflow-hidden">
         {/* Mode selector */}
         <div className="flex border-b border-warm-100">
           {([
-            { id: "image", icon: <Camera className="w-4 h-4" />, label: "Photo" },
-            { id: "barcode", icon: <ScanBarcode className="w-4 h-4" />, label: "Barcode" },
-            { id: "text", icon: <AlignLeft className="w-4 h-4" />, label: "Text" },
-          ] as { id: Mode; icon: React.ReactNode; label: string }[]).map(({ id, icon, label }) => (
+            { id: "image" as Mode, icon: <Camera className="w-4 h-4" />, label: "Photo" },
+            { id: "barcode" as Mode, icon: <ScanBarcode className="w-4 h-4" />, label: "Barcode" },
+            { id: "text" as Mode, icon: <AlignLeft className="w-4 h-4" />, label: "Text" },
+          ]).map(({ id, icon, label }) => (
             <button
               key={id}
               onClick={() => { setMode(id); setResult(null); setError(null); haptic(); }}
               className={`pressable flex-1 py-3.5 text-[14px] font-semibold transition-colors border-b-2 ${
-                mode === id
-                  ? "text-brand-500 border-brand-500"
-                  : "text-warm-400 border-transparent"
+                mode === id ? "text-brand-500 border-brand-500" : "text-warm-400 border-transparent"
               }`}
             >
               <span className="flex items-center justify-center gap-1.5">{icon}{label}</span>
@@ -139,35 +197,14 @@ export default function ScanPage() {
         {mode === "barcode" && (
           <BarcodeScanner
             onResult={(ingredients, productName) => {
-              setText(ingredients);
-              haptic(20);
-              // Auto-analyze with the fetched ingredient text
-              setLoading(true);
-              setError(null);
-              setResult(null);
-              fetch("/api/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: ingredients, profile }),
-              })
-                .then((r) => r.ok ? r.json() : r.json().then((e) => Promise.reject(e.error)))
-                .then((data: AnalysisResult) => {
-                  // Inject product name from Open Food Facts
-                  data.productName = data.productName || productName;
-                  setResult(data);
-                  saveToHistory(data, "text");
-                  haptic(20);
-                  setTimeout(() => resultSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
-                })
-                .catch((e) => { setError(typeof e === "string" ? e : "Analysis failed"); haptic(30); })
-                .finally(() => setLoading(false));
+              handleAnalyze(ingredients, productName);
             }}
             onError={(msg) => { setError(msg); haptic(30); }}
           />
         )}
 
         {/* Camera hero */}
-        {mode === "image" || mode === "text" ? (mode === "image" ? (
+        {mode === "image" && (
           <div>
             <div
               onClick={() => { fileInputRef.current?.click(); haptic(); }}
@@ -192,11 +229,7 @@ export default function ScanPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-14 px-6 gap-5">
                   <div className="w-20 h-20 rounded-[22px] bg-brand-50 flex items-center justify-center">
-                    <svg className="w-9 h-9 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6}
-                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                      <circle cx="12" cy="13" r="3" strokeWidth={1.6}/>
-                    </svg>
+                    <Camera className="w-9 h-9 text-brand-400" strokeWidth={1.5} />
                   </div>
                   <div className="text-center">
                     <p className="text-[17px] font-semibold text-warm-800">Take a Photo</p>
@@ -208,17 +241,27 @@ export default function ScanPage() {
             <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden"
               onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
           </div>
-        ) : (
+        )}
+
+        {/* Text input */}
+        {mode === "text" && (
           <div className="p-4">
             <textarea
               value={text}
               onChange={(e) => { setText(e.target.value); setResult(null); setError(null); }}
-              placeholder="Paste ingredient list here…&#10;&#10;e.g. Water, Sugar, Modified Starch (E1422), Citric Acid, Natural Flavours..."
+              placeholder={"Paste ingredient list here…\n\ne.g. Water, Sugar, Modified Starch (E1422), Citric Acid, Natural Flavours..."}
               rows={7}
               className="input-field w-full px-4 py-3.5 text-[15px] resize-none leading-relaxed"
             />
           </div>
-        )) : null}
+        )}
+
+        {/* Barcode hint */}
+        {mode === "barcode" && !loading && !result && (
+          <div className="px-5 pb-4 pt-1">
+            <p className="text-[13px] text-warm-400 text-center">Point the camera at a barcode — it scans automatically</p>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -227,34 +270,35 @@ export default function ScanPage() {
           </div>
         )}
 
-        {/* CTA */}
-        {mode === "barcode" && !loading && !result && (
-          <div className="px-5 pb-4 pt-1">
-            <p className="text-[13px] text-warm-400 text-center">Point the camera at a barcode — it scans automatically</p>
+        {/* CTA — hidden in barcode mode */}
+        {mode !== "barcode" && (
+          <div className="p-4 pt-0">
+            {mode !== "text" && <div className="h-3" />}
+            <button
+              onClick={() => handleAnalyze()}
+              disabled={loading || !canAnalyze}
+              className={`pressable w-full py-4 rounded-[16px] text-[17px] font-bold tracking-tight flex items-center justify-center gap-2.5 transition-all ${
+                canAnalyze && !loading
+                  ? "bg-brand-500 text-white shadow-float"
+                  : "bg-warm-100 text-warm-400 cursor-default"
+              }`}
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 opacity-80" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg>
+                  Analyzing…
+                </>
+              ) : "Analyze Ingredients"}
+            </button>
           </div>
         )}
-        <div className={`p-4 pt-0 ${mode === "barcode" ? "hidden" : ""}`}>
-          {mode === "text" ? null : <div className="h-3" />}
-          <button
-            onClick={handleAnalyze}
-            disabled={loading || !canAnalyze}
-            className="pressable w-full py-4 bg-brand-500 text-white rounded-[16px] text-[17px] font-bold tracking-tight flex items-center justify-center gap-2.5 disabled:opacity-40 transition-opacity"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-4 w-4 opacity-80" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"/>
-                  <path className="opacity-90" fill="white" d="M4 12a8 8 0 018-8v8H4z"/>
-                </svg>
-                Analyzing…
-              </>
-            ) : "Analyze Ingredients"}
-          </button>
-        </div>
       </div>
 
       {/* Profile prompt */}
-      {!hasProfile && !result && (
+      {!hasProfile && !result && !loading && (
         <Link href="/profile" className="block pressable animate-fade-up-d2">
           <div className="rounded-card bg-white shadow-card px-5 py-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-[12px] bg-warm-100 flex items-center justify-center shrink-0">
@@ -274,8 +318,8 @@ export default function ScanPage() {
         </Link>
       )}
 
-      {/* Active profile */}
-      {hasProfile && !result && (
+      {/* Active profile pills */}
+      {hasProfile && !result && !loading && (
         <div className="animate-fade-up-d2 flex flex-wrap gap-1.5 items-center px-1">
           <p className="text-[12px] font-semibold text-warm-400 uppercase tracking-wide mr-0.5">Profile</p>
           {profile.restrictions.map((r) => (
@@ -287,17 +331,44 @@ export default function ScanPage() {
         </div>
       )}
 
+      {/* Skeleton loading */}
+      {loading && (
+        <div ref={resultSectionRef}>
+          <SkeletonResults />
+        </div>
+      )}
+
       {/* Results */}
-      {result && (
+      {result && !loading && (
         <div ref={resultSectionRef} className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <p className="text-[12px] font-bold text-warm-400 uppercase tracking-widest">Result</p>
             <ShareButton targetRef={resultRef} result={result} />
           </div>
-          <div ref={resultRef} className="space-y-4">
-            <VerdictBanner result={result} />
-            <IngredientGrid ingredients={result.ingredients} />
+
+          {/* Desktop: two-column layout */}
+          <div ref={resultRef} className="md:grid md:grid-cols-[2fr_3fr] md:gap-5 space-y-4 md:space-y-0">
+            {/* Left col: image + quality score */}
+            <div className="space-y-4">
+              {imagePreview && (
+                <div className="rounded-card overflow-hidden shadow-card">
+                  <img src={imagePreview} alt="Scanned label" className="w-full object-cover max-h-64" />
+                </div>
+              )}
+              <QualityScore result={result} />
+              <VerdictBanner result={result} />
+            </div>
+
+            {/* Right col: ingredients */}
+            <div>
+              <IngredientGrid ingredients={result.ingredients} />
+            </div>
           </div>
+
+          {/* Compare link — secondary, in results */}
+          <Link href="/compare" className="pressable block w-full py-3.5 text-center bg-white shadow-card rounded-card text-[14px] font-semibold text-brand-500">
+            Compare with another product →
+          </Link>
         </div>
       )}
     </div>

@@ -38,16 +38,6 @@ const TABS = [
     ),
   },
   {
-    href: "/compare",
-    label: "Compare",
-    icon: (active: boolean) => (
-      <svg viewBox="0 0 28 28" className="w-[26px] h-[26px]" fill="none">
-        <rect x="3" y="4" width="9" height="20" rx="2.5" stroke="currentColor" strokeWidth="1.7" fill={active ? "currentColor" : "none"}/>
-        <rect x="16" y="4" width="9" height="20" rx="2.5" stroke="currentColor" strokeWidth="1.7" fill={active ? "currentColor" : "none"}/>
-      </svg>
-    ),
-  },
-  {
     href: "/profile",
     label: "Profile",
     icon: (active: boolean) => (

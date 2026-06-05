@@ -52,6 +52,8 @@ Respond ONLY with a valid JSON object matching this exact schema:
   "productName": "string — brand and product name if visible on label, otherwise null",
   "summary": "string — one paragraph describing what the product is",
   "verdict": "safe" | "warning" | "danger",
+  "qualityScore": number between 0 and 100 — overall ingredient quality score. Consider naturalness, number of additives, allergen load, and processing level. 80–100 = clean/natural, 60–79 = acceptable, 40–59 = processed/moderate concerns, below 40 = heavily processed or high concern,
+  "personalWarnings": ["string — short consumer-facing warning relevant to this user's profile, e.g. 'Contains Dairy', 'Not Vegan', 'Contains Fish', 'High Sodium', 'Contains Tree Nuts'. Only include warnings directly relevant to the user's dietary profile or major allergens present. Omit if no profile set and no major concerns."],
   "flagged": [
     {
       "ingredient": "string",

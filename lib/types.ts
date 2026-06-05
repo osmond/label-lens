@@ -21,6 +21,8 @@ export interface AnalysisResult {
   productName?: string;
   summary: string;
   verdict: "safe" | "warning" | "danger";
+  qualityScore?: number;
+  personalWarnings?: string[];
   flagged: FlaggedItem[];
   ingredients: IngredientCard[];
 }
