@@ -1,4 +1,4 @@
-const CACHE = "label-lens-v1";
+const CACHE = "label-lens-v2";
 const STATIC = ["/", "/history", "/compare", "/profile", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
