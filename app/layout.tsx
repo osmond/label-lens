@@ -40,7 +40,7 @@ export default function RootLayout({
         <ServiceWorkerRegistrar />
         {/* Top nav — hidden on mobile */}
         <Nav />
-        <main className="max-w-3xl mx-auto px-4 pt-5 pb-28 sm:pb-10">{children}</main>
+        <main className="max-w-3xl mx-auto px-4 pt-5 sm:pb-10" style={{paddingBottom: "max(7rem, calc(5rem + env(safe-area-inset-bottom)))"}}>{children}</main>
         {/* Bottom nav — only on mobile */}
         <BottomNav />
       </body>
