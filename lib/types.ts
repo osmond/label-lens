@@ -13,11 +13,23 @@ export interface IngredientCard {
 export interface FlaggedItem {
   ingredient: string;
   reason: string;
+  type: "confirmed" | "hidden" | "cross-contamination";
+  safeAlternative?: string;
 }
 
 export interface AnalysisResult {
+  productName?: string;
   summary: string;
   verdict: "safe" | "warning" | "danger";
   flagged: FlaggedItem[];
   ingredients: IngredientCard[];
+}
+
+export interface HistoryScan {
+  id: string;
+  timestamp: number;
+  productName: string;
+  verdict: "safe" | "warning" | "danger";
+  result: AnalysisResult;
+  inputType: "image" | "text";
 }

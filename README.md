@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Label Lens
 
-## Getting Started
+AI-powered ingredient decoder focused on dietary restrictions and hidden allergens. Upload a product label photo or paste ingredient text and get a plain-English breakdown with a personalized safety verdict.
 
-First, run the development server:
+## Features
+
+- **Photo or text input** — snap a label or paste ingredients
+- **Personal dietary profile** — select from common restrictions (vegan, gluten-free, halal, keto, etc.) and add custom allergens (mustard, sesame, lupin, celery, molluscs, pine nuts, etc.)
+- **Hidden allergen detection** — the AI reasons about derivative sources (malt vinegar → gluten, natural flavors → animal derivatives, carmine → insects, etc.)
+- **Per-ingredient cards** — plain-English name, functional role, and safety rating
+- **Personal safety verdict** — ✓ Safe / ⚠ Check these / ✕ Avoid
+- **Profile persistence** — saved to localStorage between sessions
+
+## Setup
+
+### 1. Clone and install
+
+```bash
+git clone <repo>
+cd label-lens
+npm install
+```
+
+### 2. Add your API key
+
+```bash
+cp .env.local.example .env.local
+```
+
+Edit `.env.local` and add your [Anthropic API key](https://console.anthropic.com/):
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### 3. Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Go to **My Profile** and select your dietary restrictions and custom allergens
+2. Return to **Scan** and either upload a label photo or paste the ingredient list
+3. Click **Analyze Ingredients**
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+### Vercel (recommended)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm i -g vercel
+vercel
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Set `ANTHROPIC_API_KEY` in the Vercel project's environment variables dashboard.
 
-## Deploy on Vercel
+### Other platforms
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Any platform that supports Next.js server-side rendering works. Set `ANTHROPIC_API_KEY` as a server-side environment variable (not exposed to the client).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tech Stack
+
+- Next.js 14 (App Router)
+- Tailwind CSS
+- Anthropic Claude (`claude-sonnet-4-20250514`)
+- localStorage for profile persistence
+
+## Project Structure
+
+```
+app/
+  page.tsx              # Scan page (home)
+  profile/page.tsx      # Profile setup
+  api/analyze/route.ts  # Server-side Claude API route
+  layout.tsx
+components/
+  Nav.tsx
+  VerdictBanner.tsx
+  IngredientGrid.tsx
+lib/
+  types.ts
+  profile.ts
+```
+
+## Security
+
+- The `ANTHROPIC_API_KEY` is only accessed server-side in the API route — it is never sent to the browser
+- Images are converted to base64 client-side and sent to the server via a POST body

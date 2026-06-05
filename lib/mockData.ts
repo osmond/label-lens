@@ -1,6 +1,7 @@
 import { AnalysisResult } from "./types";
 
 export const MOCK_RESULT: AnalysisResult = {
+  productName: "Kraft Classic Caesar Dressing",
   summary:
     "This appears to be a classic Caesar salad dressing — a creamy, tangy condiment made with anchovies, egg, parmesan, lemon, and garlic. It is not suitable for vegans, vegetarians, or people with fish, egg, dairy, or gluten allergies.",
   verdict: "warning",
@@ -9,20 +10,28 @@ export const MOCK_RESULT: AnalysisResult = {
       ingredient: "Anchovy paste",
       reason:
         "Direct fish allergen — not suitable for pescatarians avoiding fish, vegetarians, or vegans. Also affects halal/kosher diets unless certified.",
+      type: "confirmed",
+      safeAlternative: "Capers or miso paste for a similar umami depth",
     },
     {
       ingredient: "Worcestershire sauce",
       reason:
         "Hidden fish source — Worcestershire sauce typically contains anchovies, making it a secondary fish allergen many people overlook.",
+      type: "hidden",
+      safeAlternative: "Vegan Worcestershire sauce (e.g. Lea & Perrins Vegan)",
     },
     {
       ingredient: "Parmesan cheese",
       reason:
         "Contains dairy and uses animal rennet, making it unsuitable for vegans and those who are dairy-free. Traditional Parmesan is not vegetarian due to rennet.",
+      type: "confirmed",
+      safeAlternative: "Nutritional yeast or vegan Parmesan for a similar savory flavour",
     },
     {
       ingredient: "Egg yolk",
       reason: "Animal product — not suitable for vegans or those with egg allergies.",
+      type: "confirmed",
+      safeAlternative: "Aquafaba or silken tofu as an emulsifier",
     },
   ],
   ingredients: [

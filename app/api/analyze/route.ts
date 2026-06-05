@@ -49,10 +49,16 @@ CRITICAL INSTRUCTIONS:
 
 Respond ONLY with a valid JSON object matching this exact schema:
 {
+  "productName": "string — brand and product name if visible on label, otherwise null",
   "summary": "string — one paragraph describing what the product is",
   "verdict": "safe" | "warning" | "danger",
   "flagged": [
-    { "ingredient": "string", "reason": "string — why it conflicts or warrants caution" }
+    {
+      "ingredient": "string",
+      "reason": "string — why it conflicts or warrants caution",
+      "type": "confirmed" | "hidden" | "cross-contamination",
+      "safeAlternative": "string — a common safe swap for this ingredient, if one exists, otherwise omit"
+    }
   ],
   "ingredients": [
     {
@@ -62,7 +68,12 @@ Respond ONLY with a valid JSON object matching this exact schema:
       "safety": "safe" | "caution" | "avoid" | "neutral"
     }
   ]
-}`;
+}
+
+For "type" in flagged items:
+- "confirmed" = the ingredient directly and explicitly matches the user's restriction (e.g. milk in dairy-free)
+- "hidden" = the ingredient is a hidden/indirect source of the allergen (e.g. malt vinegar containing gluten)
+- "cross-contamination" = shared equipment or facility warning, not a direct ingredient conflict`;
 }
 
 export async function POST(req: NextRequest) {
