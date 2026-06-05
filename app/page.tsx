@@ -222,7 +222,7 @@ export default function ScanPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-slate-500">Result</h2>
-            <ShareButton targetRef={resultRef} />
+            <ShareButton targetRef={resultRef} result={result} />
           </div>
           <div ref={resultRef} className="space-y-6 rounded-xl">
             <VerdictBanner result={result} />
