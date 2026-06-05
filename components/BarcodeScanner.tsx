@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ScanBarcode, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface BarcodeScannerProps {
   onResult: (ingredients: string, productName: string) => void;
@@ -10,11 +10,17 @@ interface BarcodeScannerProps {
 export default function BarcodeScanner({ onResult, onError }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [scanning, setScanning] = useState(false);
-  const [fetching, setFetching] = useState(false);
-  const [lastCode, setLastCode] = useState("");
+  const [fetching, setFetching] = useState(false); // UI state only; logic uses fetchingRef
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const readerRef = useRef<any>(null);
+  const fetchingRef = useRef(false);
+  const lastCodeRef = useRef("");
+  const onResultRef = useRef(onResult);
+  const onErrorRef = useRef(onError);
+  onResultRef.current = onResult;
+  onErrorRef.current = onError;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let active = true;
 
@@ -28,11 +34,13 @@ export default function BarcodeScanner({ onResult, onError }: BarcodeScannerProp
         await reader.decodeFromConstraints(
           { video: { facingMode: "environment" } },
           videoRef.current!,
-          async (result, err) => {
-            if (!result || !active || fetching) return;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          async (result, _err) => {
+            if (!result || !active || fetchingRef.current) return;
             const code = result.getText();
-            if (code === lastCode) return;
-            setLastCode(code);
+            if (code === lastCodeRef.current) return;
+            lastCodeRef.current = code;
+            fetchingRef.current = true;
 
             if ("vibrate" in navigator) navigator.vibrate(15);
             setFetching(true);
@@ -43,34 +51,30 @@ export default function BarcodeScanner({ onResult, onError }: BarcodeScannerProp
               );
               const data = await res.json();
               if (data.status !== 1 || !data.product) {
-                onError(`Product not found in database (${code}). Try the photo or text mode.`);
+                onErrorRef.current(`Product not found in database (${code}). Try the photo or text mode.`);
+                fetchingRef.current = false;
+                lastCodeRef.current = "";
                 setFetching(false);
-                setLastCode("");
                 return;
               }
               const product = data.product;
-              const ingredients =
-                product.ingredients_text_en ||
-                product.ingredients_text ||
-                "";
-              const name =
-                product.product_name_en ||
-                product.product_name ||
-                product.brands ||
-                "Unknown Product";
+              const ingredients = product.ingredients_text_en || product.ingredients_text || "";
+              const name = product.product_name_en || product.product_name || product.brands || "Unknown Product";
 
               if (!ingredients) {
-                onError(`No ingredient data found for "${name}". Try the photo mode instead.`);
+                onErrorRef.current(`No ingredient data found for "${name}". Try the photo mode instead.`);
+                fetchingRef.current = false;
+                lastCodeRef.current = "";
                 setFetching(false);
-                setLastCode("");
                 return;
               }
 
-              onResult(ingredients, name);
+              onResultRef.current(ingredients, name);
             } catch {
-              onError("Failed to look up barcode. Check your connection.");
+              onErrorRef.current("Failed to look up barcode. Check your connection.");
+              fetchingRef.current = false;
+              lastCodeRef.current = "";
               setFetching(false);
-              setLastCode("");
             }
           }
         );
