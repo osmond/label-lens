@@ -7,6 +7,7 @@ import VerdictBanner from "@/components/VerdictBanner";
 import IngredientGrid from "@/components/IngredientGrid";
 import ShareButton from "@/components/ShareButton";
 import Link from "next/link";
+import { Camera, AlignLeft, FlaskConical } from "lucide-react";
 
 type Mode = "image" | "text";
 
@@ -102,7 +103,7 @@ export default function ScanPage() {
       {process.env.NEXT_PUBLIC_MOCK_MODE === "true" && (
         <div className="animate-fade-up-d1 rounded-[14px] bg-brand-50 border border-brand-100 px-4 py-3 flex items-center gap-3">
           <div className="w-7 h-7 rounded-[8px] bg-brand-100 flex items-center justify-center shrink-0">
-            <span className="text-[14px]">🧪</span>
+            <FlaskConical className="w-4 h-4 text-brand-400" />
           </div>
           <p className="text-[13px] font-medium text-brand-600">
             Mock mode — sample data only. Add a real API key to use Claude.
@@ -124,7 +125,11 @@ export default function ScanPage() {
                   : "text-warm-400 border-transparent"
               }`}
             >
-              {m === "image" ? "📷  Photo" : "✏️  Paste Text"}
+              {m === "image" ? (
+                <span className="flex items-center justify-center gap-1.5"><Camera className="w-4 h-4" />Photo</span>
+              ) : (
+                <span className="flex items-center justify-center gap-1.5"><AlignLeft className="w-4 h-4" />Paste Text</span>
+              )}
             </button>
           ))}
         </div>
